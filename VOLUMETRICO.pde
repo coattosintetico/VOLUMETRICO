@@ -1,58 +1,50 @@
 PImage img;
+PImage origImg;
 
-int NO_OF_TILES = 60;
-int tileSize;
+int[] NO_OF_TILES = {120, 214};
+int tileSize = 4;
 
 float[][] terrain;
+color[][] terrainColors;
+float MAX_Z = 10;
 
 void setup() {
-  size(720, 720, P3D);
-  img = loadImage("clean_sqr.jpg");
-  // img.resize(480, 854);
+  size(480, 854, P3D);
+  img = loadImage("cazorla.jpg");
+  origImg = loadImage("cazorla.jpg");
+  img.resize(480, 854);
+  origImg.resize(480, 854);
 
   img.filter(GRAY);
   img = enhanceContrast(img, 2);
 
-  tileSize = round(width / NO_OF_TILES);
+  terrain = new float[NO_OF_TILES[0]][NO_OF_TILES[1]];
+  terrainColors = new color[NO_OF_TILES[0]][NO_OF_TILES[1]];
 
-  terrain = new float[NO_OF_TILES][NO_OF_TILES];
-  for (int x = 0; x < NO_OF_TILES; x++) {
-    for (int y = 0; y < NO_OF_TILES; y++) {
-      float tileX = tileSize * x + tileSize * 1/2; // careful here with what do I multiply - it can round numbers
-      float tileY = tileSize * y + tileSize * 1/2;
+  for (int i = 0; i < NO_OF_TILES[0]; i++) {
+    for (int j = 0; j < NO_OF_TILES[1]; j++) {
+      float tileX = tileSize * i + tileSize * 1/2; // careful here with what do I multiply - it can round numbers
+      float tileY = tileSize * j + tileSize * 1/2;
       color tileColor = img.get(int(tileX), int(tileY));
-      float b = map(brightness(tileColor), 0, 255, 1.5, 0);
-      float z = map(b, 0, 1, -100, 100);
-      terrain[x][y] = z;
+      float b = map(brightness(tileColor), 0, 255, 1, 0);
+      float z = map(b, 0, 1, -MAX_Z*2, MAX_Z*2);
+      terrain[i][j] = z;
+      terrainColors[i][j] = origImg.get(int(tileX), int(tileY));
     }
-  }}
+  }
+}
 
 void draw() {
   background(0);
   // image(img, 0, 0);
 
   directionalLight(255, 255, 255, -1, 0, -1);
+
   pushMatrix();
   translate(width/2, height/2);
-  rotateY(radians(frameCount));
+  rotateY(radians(frameCount*0.5));
 
-  triangulize(terrain, tileSize);
-
-  // for (int x = 0; x < NO_OF_TILES; x++) {
-  //   for (int y = 0; y < NO_OF_TILES; y++) {
-  //     float tileX = tileSize * x + tileSize * 1/2; // careful here with what do I multiply - it can round numbers
-  //     float tileY = tileSize * y + tileSize * 1/2;
-  //     color tileColor = img.get(int(tileX), int(tileY));
-  //     float b = map(brightness(tileColor), 0, 255, 1.5, 0);
-  //     float z = map(b, 0, 1, -100, 100);
-  //     // why can't i do this offset with translate?
-  //     // pushMatrix();
-  //     stroke(0);
-  //     strokeWeight(tileSize*b);
-  //     point(tileX-width/2, tileY-height/2, z);
-  //     // popMatrix();
-  //   }
-  // }
+  triangulize(terrain, terrainColors, tileSize);
 
   popMatrix();
 }
@@ -72,25 +64,29 @@ PImage enhanceContrast(PImage orig, float parameter) {
 }
 
 
-void triangulize(float[][] terrain, float tileSize) {
+void triangulize(float[][] terrain, color[][] terrainColors, float tileSize) {
   /*
     Draws a mesh of points with triangle shapes, using the terrain as the z 
     values. It recenters the triangle, assuming that a translation to the
     middle of the screen has been made.
+    Asumes the tiles have the same width and height.
   */
   int cols = terrain.length;
   int rows = terrain[0].length;
-  for (int x = 0; x < cols-1; x++) {
-    for (int y = 0; y < rows-1; y++) {
-      fill(220);
+  for (int i = 0; i < cols-1; i++) {
+    for (int j = 0; j < rows-1; j++) {
+      fill(terrainColors[i][j]);
       strokeWeight(1);
       noStroke();
       beginShape(TRIANGLE_STRIP);
-      float s = tileSize;
-      vertex(x    *s - width/2, y    *s - height/2, terrain[x  ][y  ]);
-      vertex((x+1)*s - width/2, y    *s - height/2, terrain[x+1][y  ]);
-      vertex(x    *s - width/2, (y+1)*s - height/2, terrain[x  ][y+1]);
-      vertex((x+1)*s - width/2, (y+1)*s - height/2, terrain[x+1][y+1]);
+      float x   =  i   *tileSize - width/2;
+      float xP1 = (i+1)*tileSize - width/2;
+      float y   =  j   *tileSize - height/2;
+      float yP1 = (j+1)*tileSize - height/2;
+      vertex(x  , y  , terrain[i  ][j  ]);
+      vertex(xP1, y  , terrain[i+1][j  ]);
+      vertex(x  , yP1, terrain[i  ][j+1]);
+      vertex(xP1, yP1, terrain[i+1][j+1]);
       endShape();
     }
   }
