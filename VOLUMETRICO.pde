@@ -1,53 +1,58 @@
 PImage img;
 
-int NO_OF_TILES_W = 60;
-int NO_OF_TILES_H = 107;
-int tileWidth, tileHeight;
+int NO_OF_TILES = 60;
+int tileSize;
+
+float[][] terrain;
 
 void setup() {
-  size(480, 854, P3D);
-  img = loadImage("clean.jpg");
-  img.resize(480, 854);
+  size(720, 720, P3D);
+  img = loadImage("clean_sqr.jpg");
+  // img.resize(480, 854);
 
   img.filter(GRAY);
   img = enhanceContrast(img, 2);
 
-  // would the number of tiles affect a lot in this rounding?
-  tileWidth = round(width / NO_OF_TILES_W);
-  // fix this: tile size varies a lot
-  tileHeight = 8;//round(height / NO_OF_TILES_H);
-}
+  tileSize = round(width / NO_OF_TILES);
+
+  terrain = new float[NO_OF_TILES][NO_OF_TILES];
+  for (int x = 0; x < NO_OF_TILES; x++) {
+    for (int y = 0; y < NO_OF_TILES; y++) {
+      float tileX = tileSize * x + tileSize * 1/2; // careful here with what do I multiply - it can round numbers
+      float tileY = tileSize * y + tileSize * 1/2;
+      color tileColor = img.get(int(tileX), int(tileY));
+      float b = map(brightness(tileColor), 0, 255, 1.5, 0);
+      float z = map(b, 0, 1, -100, 100);
+      terrain[x][y] = z;
+    }
+  }}
 
 void draw() {
-  background(220);
+  background(0);
   // image(img, 0, 0);
 
+  directionalLight(255, 255, 255, -1, 0, -1);
   pushMatrix();
   translate(width/2, height/2);
   rotateY(radians(frameCount));
 
-  /*
-    Ahora quiero simplificar todo esto y generar un mesh de puntos dado por la imagen, donde el valor de z sea el brightness
-  */
+  triangulize(terrain, tileSize);
 
-  float contrast = map(mouseX, 0, width, 1, 3);
-  for (int x = 0; x < NO_OF_TILES_W; x++) {
-    for (int y = 0; y < NO_OF_TILES_H; y++) {
-      float tileX = tileWidth * x + tileWidth * 1/2; // careful here with what do I multiply - it can round numbers
-      float tileY = tileHeight * y + tileHeight * 1/2;
-      color tileColor = img.get(int(tileX), int(tileY));
-      float b = map(brightness(tileColor), 0, 255, 1, 0);
-      float z = map(b, 0, 1, -100, 100);
-      noStroke();
-      fill(0);
-      ellipseMode(CENTER);
-      // why can't i do this offset with translate?
-      pushMatrix();
-      translate(0, 0, z);
-      ellipse(tileX-width/2, tileY-height/2, tileWidth*b, tileHeight*b);
-      popMatrix();
-    }
-  }
+  // for (int x = 0; x < NO_OF_TILES; x++) {
+  //   for (int y = 0; y < NO_OF_TILES; y++) {
+  //     float tileX = tileSize * x + tileSize * 1/2; // careful here with what do I multiply - it can round numbers
+  //     float tileY = tileSize * y + tileSize * 1/2;
+  //     color tileColor = img.get(int(tileX), int(tileY));
+  //     float b = map(brightness(tileColor), 0, 255, 1.5, 0);
+  //     float z = map(b, 0, 1, -100, 100);
+  //     // why can't i do this offset with translate?
+  //     // pushMatrix();
+  //     stroke(0);
+  //     strokeWeight(tileSize*b);
+  //     point(tileX-width/2, tileY-height/2, z);
+  //     // popMatrix();
+  //   }
+  // }
 
   popMatrix();
 }
@@ -64,4 +69,29 @@ PImage enhanceContrast(PImage orig, float parameter) {
   }
   img.updatePixels();
   return img;
+}
+
+
+void triangulize(float[][] terrain, float tileSize) {
+  /*
+    Draws a mesh of points with triangle shapes, using the terrain as the z 
+    values. It recenters the triangle, assuming that a translation to the
+    middle of the screen has been made.
+  */
+  int cols = terrain.length;
+  int rows = terrain[0].length;
+  for (int x = 0; x < cols-1; x++) {
+    for (int y = 0; y < rows-1; y++) {
+      fill(220);
+      strokeWeight(1);
+      noStroke();
+      beginShape(TRIANGLE_STRIP);
+      float s = tileSize;
+      vertex(x    *s - width/2, y    *s - height/2, terrain[x  ][y  ]);
+      vertex((x+1)*s - width/2, y    *s - height/2, terrain[x+1][y  ]);
+      vertex(x    *s - width/2, (y+1)*s - height/2, terrain[x  ][y+1]);
+      vertex((x+1)*s - width/2, (y+1)*s - height/2, terrain[x+1][y+1]);
+      endShape();
+    }
+  }
 }
