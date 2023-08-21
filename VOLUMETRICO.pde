@@ -1,6 +1,7 @@
 PImage[] imgs;
 int noOfFrames = 208;
 int imgIndex = 0;
+int direction = 1;
 
 int[] NO_OF_TILES = {120, 214};
 int tileSize = 4;
@@ -8,6 +9,9 @@ int tileSize = 4;
 float[][] terrain;
 color[][] terrainColors;
 float MAX_Z = 40;
+
+float theta = 0;
+boolean returnToZero = false; // a variable to control whether theta should return to zero
 
 void setup() {
   size(480, 854, P3D);
@@ -30,9 +34,15 @@ void draw() {
 
   // directionalLight(255, 255, 255, -1, 0, -1);
 
+  if (!returnToZero) {
+    theta = lerp(theta, map(mouseX, 0, width, -PI, PI), 0.1);
+  } else {
+    theta = lerp(theta, 0, 0.1);
+  }
+
   pushMatrix();
   translate(width/2, height/2);
-  rotateY(map(mouseX, 0, width, -PI, PI));
+  rotateY(theta);
   // imageMode(CENTER);
   // image(imgs[imgIndex], 0, 0);
 
@@ -40,7 +50,17 @@ void draw() {
   triangulize(terrain, terrainColors, tileSize);
 
   popMatrix();
-  imgIndex = (imgIndex + 1) % noOfFrames;
+  imgIndex += direction;
+  if (imgIndex >= (noOfFrames-1) || imgIndex <= 0) {
+    direction *= -1;
+  }
+}
+
+void keyPressed() {
+  if (key == ' ') {
+    returnToZero = !returnToZero;
+    println("space bar pressed");
+  }
 }
 
 
