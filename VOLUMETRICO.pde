@@ -11,16 +11,19 @@ color[][] terrainColors;
 float MAX_Z = 40;
 
 float theta = 0;
-boolean returnToZero = false; // a variable to control whether theta should return to zero
+float phi = 0;
+boolean returnToZero = true; // a variable to control whether theta should return to zero
 
 void setup() {
   size(480, 854, P3D);
   frameRate(24);
+  ortho();
+  lights();
 
   imgs = new PImage[noOfFrames];
   println("Loading images...");
   for (int i = 0; i < noOfFrames; i++) {
-    imgs[i] = loadImage("frames/frame" + nf(i+1, 4) + ".jpg");
+    imgs[i] = loadImage("framesClean/frame" + nf(i+1, 4) + ".jpg");
     imgs[i].resize(480, 854);
   }
   println("Images loaded.");
@@ -32,17 +35,26 @@ void setup() {
 void draw() {
   background(0);
 
-  // directionalLight(255, 255, 255, -1, 0, -1);
+  // directionalLight(200, 200, 255, 0, 1, -1);
+
+  if (!returnToZero) {
+    directionalLight(200, 200, 200, -1, 0, -1);
+    directionalLight(200, 100, 100, 1, 0, -1);
+    // directionalLight(120, 120, 120, 0, -1, -1);
+  }
 
   if (!returnToZero) {
     theta = lerp(theta, map(mouseX, 0, width, -PI, PI), 0.1);
+    phi = lerp(phi, map(mouseY, 0, height, -PI, PI), 0.1);
   } else {
     theta = lerp(theta, 0, 0.1);
+    phi = lerp(phi, 0, 0.1);
   }
 
   pushMatrix();
   translate(width/2, height/2);
   rotateY(theta);
+  rotateX(-phi);
   // imageMode(CENTER);
   // image(imgs[imgIndex], 0, 0);
 
@@ -54,12 +66,18 @@ void draw() {
   if (imgIndex >= (noOfFrames-1) || imgIndex <= 0) {
     direction *= -1;
   }
+
+  saveFrame("savedFrames/frame" + nf(frameCount, 5) + ".jpg");
+
+  // print debug info about angles
+  fill(255);
+  text("theta: " + map(mouseX, 0, width,  -PI, PI), 10, height-30, 200);
+  text("phi: "   + map(mouseY, 0, height, -PI, PI), 10, height-10, 200);
 }
 
 void keyPressed() {
   if (key == ' ') {
     returnToZero = !returnToZero;
-    println("space bar pressed");
   }
 }
 
