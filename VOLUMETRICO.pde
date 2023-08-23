@@ -2,6 +2,7 @@ PImage[] imgs;
 int noOfFrames = 208;
 int imgIndex = 0;
 int direction = 1;
+int slowedIndex = 0;
 
 int[] NO_OF_TILES = {120, 214};
 int tileSize = 4;
@@ -38,8 +39,8 @@ void draw() {
   // directionalLight(200, 200, 255, 0, 1, -1);
 
   if (!returnToZero) {
-    directionalLight(200, 200, 200, -1, 0, -1);
-    directionalLight(200, 100, 100, 1, 0, -1);
+    directionalLight(200, 200*cos(theta), 200*cos(theta), 1, 0, -1);
+    directionalLight(200*cos(phi), 200*cos(phi), 200, -1, 0, -1);
     // directionalLight(120, 120, 120, 0, -1, -1);
   }
 
@@ -62,9 +63,15 @@ void draw() {
   triangulize(terrain, terrainColors, tileSize);
 
   popMatrix();
-  imgIndex += direction;
-  if (imgIndex >= (noOfFrames-1) || imgIndex <= 0) {
-    direction *= -1;
+  if (returnToZero) {
+    imgIndex += direction;
+    if (imgIndex >= (noOfFrames-1) || imgIndex <= 0) direction *= -1;
+  } else {
+    slowedIndex++;
+    if (slowedIndex % 2 == 0) {
+      imgIndex += direction;
+      if (imgIndex >= (noOfFrames-1) || imgIndex <= 0) direction *= -1;
+    }
   }
 
   saveFrame("savedFrames/frame" + nf(frameCount, 5) + ".jpg");
